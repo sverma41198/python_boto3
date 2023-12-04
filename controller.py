@@ -285,11 +285,12 @@ def update_file(public_ip):
         # Execute the command on the remote instance
         stdin, stdout, stderr = ssh_client.exec_command(command)
         
+        print("Appended Text: ")
         # Display the output (if any)
         for line in stdout:
             print(line.strip())
 
-        #Print content of the files before update
+        #Print content of the files After update
         command = f"cat {remote_file_path}"
         
         # Execute the command on the remote instance
