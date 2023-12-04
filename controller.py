@@ -140,7 +140,7 @@ def check_and_create_security_group(group_name, group_description, vpc_id):
 def launch_ec2_instance(vpc_id, subnet_id, security_group_id):
     ec2 = boto3.client('ec2', region_name= region)  # Replace 'your_region' with your desired AWS region
     # Instance details
-    image_id = 'ami-0e83be366243f524a'  # Amazon Machine Image ID
+    image_id = 'ami-0efcece6bed30fd98'  # Amazon Machine Image ID
     instance_type = 't2.micro'  # Instance type
     key_name = f'msys-infra-{region}-private-key'  # Key pair name in AWS
     name_tag = f'msys-infra-{region}-vm'
@@ -276,7 +276,7 @@ def update_file(public_ip):
         # Execute the command on the remote instance
         stdin, stdout, stderr = ssh_client.exec_command(command)
         print("Content Berfore Update: ")
-        
+        print() 
         # Display the output (if any)
         for line in stdout:
             print(line.strip())
@@ -284,23 +284,25 @@ def update_file(public_ip):
         command = f"echo '{text_to_append}' | sudo tee -a {remote_file_path}"
         # Execute the command on the remote instance
         stdin, stdout, stderr = ssh_client.exec_command(command)
-        
+        print() 
         print("Appended Text: ")
+        print() 
         # Display the output (if any)
         for line in stdout:
             print(line.strip())
-
+        print() 
         #Print content of the files After update
         command = f"cat {remote_file_path}"
         
         # Execute the command on the remote instance
         stdin, stdout, stderr = ssh_client.exec_command(command)
         print("Content After Update: ")
-        
+        print() 
         # Display the output (if any)
         for line in stdout:
             print(line.strip())        
 
+        print() 
 
         # Close the SSH connection
         ssh_client.close()
