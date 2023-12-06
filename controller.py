@@ -1,7 +1,7 @@
 import boto3
 import sys
 import paramiko
-
+import time
 region = sys.argv[1]
 
 def create_vpc_igw_route_table_public_subnet(vpc_name, vpc_cidr_block, subnet_cidr_block):
@@ -140,7 +140,7 @@ def check_and_create_security_group(group_name, group_description, vpc_id):
 def launch_ec2_instance(vpc_id, subnet_id, security_group_id):
     ec2 = boto3.client('ec2', region_name= region)  # Replace 'your_region' with your desired AWS region
     # Instance details
-    image_id = 'ami-0efcece6bed30fd98'  # Amazon Machine Image ID
+    image_id = 'ami-0e83be366243f524a'  # Amazon Machine Image ID
     instance_type = 't2.micro'  # Instance type
     key_name = f'msys-infra-{region}-private-key'  # Key pair name in AWS
     name_tag = f'msys-infra-{region}-vm'
@@ -229,7 +229,7 @@ def launch_ec2_instance(vpc_id, subnet_id, security_group_id):
                 },
             ]
         )
-
+        print(f"Creating Instance '{name_tag}'.....")
         instance_id = response['Instances'][0]['InstanceId']
 
     # Wait for the instance to be running
@@ -331,5 +331,5 @@ if __name__ == '__main__':
 
     instance_id,public_ip = launch_ec2_instance(created_vpc_id, created_subnet_id,existing_or_created_group_id)
     print(f"Launched EC2 instance with ID: {instance_id}")
-
+    time.sleep(30)
     update_file(public_ip)
