@@ -10,15 +10,11 @@ def cleanup_instance_and_security_group_by_tags(instance_name):
     response = ec2.describe_instances(Filters=[{'Name': 'tag:Name', 'Values': [instance_name]}])
 
     instance_id = None
-    security_group_ids = []
 
     for reservation in response['Reservations']:
         for instance in reservation['Instances']:
             instance_id = instance['InstanceId']
 
-            # Collect associated security group IDs
-            for security_group in instance['SecurityGroups']:
-                security_group_ids.append(security_group['GroupId'])
 
     if instance_id:
         # Terminate the instance
@@ -30,12 +26,27 @@ def cleanup_instance_and_security_group_by_tags(instance_name):
         waiter = ec2.get_waiter('instance_terminated')
         waiter.wait(InstanceIds=[instance_id])
 
-        # Delete associated security groups
-        for sg_id in security_group_ids:
-            ec2.delete_security_group(GroupId=sg_id)
-            print(f"Security Group {sg_id} has been deleted.")
     else:
-        print(f"No instance found with the name '{instance_name}'.")
+        print(f"No Instance found with the name {instance_name}.")
+
+ # Describe security groups with a specific tag
+    response = ec2.describe_security_groups(Filters=[
+        {
+            'Name': 'group-name',
+            'Values': [f'msys-infra-{region}-sg']
+        }
+    ])
+
+    # Check if any security groups were found
+    if 'SecurityGroups' in response:
+        for sg in response['SecurityGroups']:
+            sg_id = sg['GroupId']
+
+            # Delete the security group
+            ec2.delete_security_group(GroupId=sg_id)
+            print(f"Security Group {sg_id} deleted.")
+    else:
+        print("No security groups found with the specified tag.")
 
 def delete_vpc_by_name_tag(vpc_name):
     ec2 = boto3.client('ec2',region_name= region)
