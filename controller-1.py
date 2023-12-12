@@ -2,7 +2,7 @@ import boto3
 import sys
 import paramiko
 import time
-
+import subprocess
 
 def create_vpc_igw_route_table_public_subnet(region,vpc_name, vpc_cidr_block, subnet_cidr_block):
     ec2 = boto3.client('ec2', region_name= region)  # Replace 'your_region' with your desired AWS region
@@ -246,15 +246,18 @@ def launch_ec2_instance(region,ami_id,vpc_id, subnet_id, security_group_id):
 
     return instance_id, public_ip # Return the instance ID
 
-def update_file(region,public_ip):
+def update_file(region,public_ip,dns_name_server):
     # SSH Connection using Paramiko
     key_name= f'msys-infra-{region}-private-key'
     key_path = f'/home/ec2-user/python_boto3/{key_name}.pem'  # Replace with the path to your .pem file
     username = 'ubuntu'  # Replace with the username for your EC2 instance
-    remote_file_path = '/etc/resolv.conf' 
+    
+    # Local file path
+    local_file_path = '/home/ec2-user/python_boto3/resolv.conf'
 
-    # Content to update in the remote file
-    text_to_append = "This text will be appended to the file on the remote instance."
+    # Remote file paths
+    remote_original_file_path = '/etc/resolv.conf'  # The file you want to replace
+    remote_temp_file_path = f'/home/{username}/resolv.conf'  # Temporary file for replacement
    
 
     # Create a new SSH client
@@ -271,7 +274,7 @@ def update_file(region,public_ip):
         print("Connected to the remote server!")
         
         #Print content of the files before update
-        command = f"cat {remote_file_path}"
+        command = f"cat {remote_original_file_path}"
         
         # Execute the command on the remote instance
         stdin, stdout, stderr = ssh_client.exec_command(command)
@@ -281,19 +284,29 @@ def update_file(region,public_ip):
         for line in stdout:
             print(line.strip())
 
-        command = f"echo '{text_to_append}' | sudo tee -a {remote_file_path}"
-        # Execute the command on the remote instance
-        stdin, stdout, stderr = ssh_client.exec_command(command)
+        # Create an SFTP client session
+        sftp = ssh_client.open_sftp()
+
+        # Copy local file to a temporary location on the remote server
+        sftp.put(local_file_path, remote_temp_file_path)
+
+        # Replace the remote original file with the temporary file using sudo (root) permissions
+        sudo_replace_command = f"sudo mv -f {remote_temp_file_path} {remote_original_file_path}"
+        stdin, stdout, stderr = ssh_client.exec_command(sudo_replace_command)
+
+        # Replace the dns name in original file with the new dns name
+        sudo_replace_command = f"sudo sed -i 's/google.com/{dns_name_server}/g' {remote_original_file_path}"
+        stdin, stdout, stderr = ssh_client.exec_command(sudo_replace_command)
+
+        # Check if there's any error output
+        error = stderr.read().decode().strip()
+        if error:
+            print(f"Error occurred: {error}")
+        else:
+            print(f"File '{local_file_path}' replaced '{remote_original_file_path}' successfully.")
+
+
         print() 
-        print("Appended Text: ")
-        print() 
-        # Display the output (if any)
-        for line in stdout:
-            print(line.strip())
-        print() 
-        #Print content of the files After update
-        command = f"cat {remote_file_path}"
-        
         # Execute the command on the remote instance
         stdin, stdout, stderr = ssh_client.exec_command(command)
         print("Content After Update: ")
@@ -331,7 +344,7 @@ def main(region, ami_id):
     instance_id,public_ip = launch_ec2_instance(region,ami_id,created_vpc_id, created_subnet_id,existing_or_created_group_id)
     print(f"Launched EC2 instance with ID: {instance_id}")
     time.sleep(30)
-    update_file(region,public_ip)
+    update_file(region,public_ip,'facebook.com')
 
 
 if __name__ == '__main__':

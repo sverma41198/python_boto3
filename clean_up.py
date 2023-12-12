@@ -4,6 +4,7 @@ import sys
 region = sys.argv[1]
 
 def cleanup_instance_and_security_group_by_tags(instance_name):
+    
     ec2 = boto3.client('ec2', region_name= region)
 
     # Find the instance by its name tag
@@ -104,13 +105,14 @@ def main(region):
 
 if __name__ == '__main__' :
     
-    All=['us-east-1', 'us-east-2', 'us-west-1', 'us-west-2']
+    All=[['us-east-1','ami-0fc5d935ebf8bc3bc'],['us-east-2','ami-0e83be366243f524a'],['us-west-1','ami-0cbd40f694b804622'],['us-west-2','ami-0efcece6bed30fd98']]
     
-    if region in All:
+    if region in [region[0] for region in All] :
         print(f"Cleaning Resources for '{region}'...")
         main(region)
     
     elif region== 'all':
-        for region in All:
-            print(f"Cleaning Resources for '{region}'...")
+        for ele in All:
+            print(f"Cleaning Resources for '{ele[0]}'...")
+            region= ele[0]
             main(region)

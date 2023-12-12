@@ -1,3 +1,5 @@
 #Ignore All PEM files
 
 *.pem
+resolv.conf
+resolv.py
